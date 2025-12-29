@@ -1,0 +1,48 @@
+<!--
+Author: Betelehem Belayneh
+jobs.html
+Job application entry and listing page.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Job Applications</title>
+
+  <link rel="stylesheet" href="tracker.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="tracker.js"></script>
+</head>
+
+<body>
+
+  <h2>Job Applications</h2>
+
+  <form id="jobForm">
+    <h3>Add Application</h3>
+
+    <label>Company-name</label>
+    <input type="text" id="name" required>
+
+    <label>Position</label>
+    <input type="text" id="position" required>
+
+    <label>Status</label>
+    <select id="job_status">
+      <option>Applied</option>
+      <option>Interview</option>
+      <option>Offer</option>
+      <option>Rejected</option>
+    </select>
+
+    <label>Applied Date</label>
+    <input type="date" id="applied_date" required>
+
+    <button type="submit">Add Application</button>
+  </form>
+
+  <table id="jobTable"></table>
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!--
+Author: Betelehem Belayneh
+school.html
+School assignment entry and listing page.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>School Tracker</title>
+
+  <link rel="stylesheet" href="tracker.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="tracker.js"></script>
+</head>
+
+<body>
+
+  <h2>School Assignments</h2>
+
+  <form id="assignmentForm">
+    <h3>Add Assignment</h3>
+
+    <label>Course ID</label>
+    <input type="text" id="Course ID" required>
+
+    <label>Title</label>
+    <input type="text" id="title" required>
+
+    <label>Due Date</label>
+    <input type="date" id="due_date" required>
+
+    <label>Status</label>
+    <select id="status">
+      <option>Pending</option>
+      <option>Completed</option>
+      <option>Overdue</option>
+    </select>
+
+    <button type="submit">Add Assignment</button>
+  </form>
+
+  <table id="assignmentTable"></table>
+
+</body>
+</html>
