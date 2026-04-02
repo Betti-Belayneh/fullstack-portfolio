@@ -1,18 +1,23 @@
+# Full Stack Portfolio
 
-Author: Betelehem Belayneh
+A full-stack web application demonstrating frontend and backend integration, API handling, and responsive design.
 
-Student & Job Application Tracker
+## Features
+- Interactive UI with dynamic data rendering
+- REST API integration
+- Form validation and error handling
+- Modular and maintainable code structure
 
-This is a full-stack Node.js application built with Express and MySQL.
+## Tech Stack
+- JavaScript
+- HTML/CSS
+- APIs
+- Git/GitHub
 
-HOW TO RUN:
-1. Log into the server.
-2. Import the SQL file in sql/zerihunb_tracker.sql.
-3. Run: npm install express mysql
-4. Start server: node server.js
-5. Open browser at http://augwebapps.com:3000
+## What I Learned
+- Building scalable frontend components
+- Handling asynchronous API calls
+- Structuring full-stack applications
 
-FILES:
-- server.js : Express server and API
-- public/   : HTML, CSS, JS files
-- sql/      : Database schema
+## Author
+Betelehem Belayneh
