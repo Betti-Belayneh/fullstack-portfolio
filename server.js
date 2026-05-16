@@ -1,32 +1,43 @@
 /**
  * Author: Betelehem Belayneh
  * server.js
- * Express server for Student & Job Tracker
+ * Express server for Student & Job Application Tracker
  */
-
-console.log("server.js loaded");
 
 const express = require("express");
 const mysql = require("mysql2");
+const path = require("path");
+
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
-const dbConfig = {
-  host: "127.0.0.1",
-  user: "demo",
-  password: "$311de999",
-  database: "zerihunb_tracker"
-};
+// Database connection pool — reads credentials from environment variables.
+// Never commit real credentials to git.
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || "127.0.0.1",
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "zerihunb_tracker",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+/* ---------------------------
+   HEALTH CHECK
+---------------------------- */
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime() });
+});
 
 /* ---------------------------
    GET ASSIGNMENTS
 ---------------------------- */
-app.get("/assignments", function (req, res) {
-  const conn = mysql.createConnection(dbConfig);
-
+app.get("/assignments", (req, res) => {
   const sql = `
     SELECT a.title, a.due_date, a.status, c.course_name
     FROM assignment a
@@ -34,23 +45,19 @@ app.get("/assignments", function (req, res) {
     ORDER BY a.due_date
   `;
 
-  conn.query(sql, function (err, rows) {
+  pool.query(sql, (err, rows) => {
     if (err) {
-      console.error(err);
-      res.status(500).json([]);
-    } else {
-      res.json(rows);
+      console.error("GET /assignments failed:", err.message);
+      return res.status(500).json({ error: "Failed to fetch assignments" });
     }
-    conn.end();
+    res.json(rows);
   });
 });
 
 /* ---------------------------
    GET APPLICATIONS
 ---------------------------- */
-app.get("/applications", function (req, res) {
-  const conn = mysql.createConnection(dbConfig);
-
+app.get("/applications", (req, res) => {
   const sql = `
     SELECT a.position, a.status, a.applied_date, c.company_name
     FROM application a
@@ -58,71 +65,72 @@ app.get("/applications", function (req, res) {
     ORDER BY a.applied_date DESC
   `;
 
-  conn.query(sql, function (err, rows) {
+  pool.query(sql, (err, rows) => {
     if (err) {
-      console.error(err);
-      res.status(500).json([]);
-    } else {
-      res.json(rows);
+      console.error("GET /applications failed:", err.message);
+      return res.status(500).json({ error: "Failed to fetch applications" });
     }
-    conn.end();
+    res.json(rows);
   });
 });
 
 /* ---------------------------
    ADD ASSIGNMENT
 ---------------------------- */
-app.post("/assignment", function (req, res) {
+app.post("/assignment", (req, res) => {
   const { course_id, title, due_date, status } = req.body;
-  const conn = mysql.createConnection(dbConfig);
 
-  conn.query(
+  if (!course_id || !title || !due_date || !status) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  pool.query(
     "INSERT INTO assignment (course_id, title, due_date, status) VALUES (?, ?, ?, ?)",
     [course_id, title, due_date, status],
-    function (err) {
+    (err) => {
       if (err) {
-        console.error(err);
-        res.status(500).json({ error: "Insert failed" });
-      } else {
-        res.json({ success: true });
+        console.error("POST /assignment failed:", err.message);
+        return res.status(500).json({ error: "Insert failed" });
       }
-      conn.end();
+      res.json({ success: true });
     }
   );
 });
 
 /* ---------------------------
    ADD APPLICATION
+   - Checks if company already exists
+   - Creates it if not
+   - Then inserts the application linked to that company
 ---------------------------- */
-app.post("/application", function (req, res) {
+app.post("/application", (req, res) => {
   const { company_name, position, status, applied_date } = req.body;
-  const conn = mysql.createConnection(dbConfig);
 
-  // 1. Check if company exists
-  conn.query(
+  if (!company_name || !position || !status || !applied_date) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const trimmedName = company_name.trim();
+
+  pool.query(
     "SELECT company_id FROM company WHERE company_name = ?",
-    [company_name.trim()],
-    function (err, rows) {
+    [trimmedName],
+    (err, rows) => {
       if (err) {
-        console.error(err);
-        res.status(500).json({ error: "DB error" });
-        conn.end();
-        return;
+        console.error("Company lookup failed:", err.message);
+        return res.status(500).json({ error: "DB error" });
       }
 
-      // 2. If company does NOT exist → insert it
       if (rows.length === 0) {
-        conn.query(
+        // Company doesn't exist — insert it first
+        pool.query(
           "INSERT INTO company (company_name) VALUES (?)",
-          [company_name.trim()],
-          function (err2, result) {
+          [trimmedName],
+          (err2, result) => {
             if (err2) {
-              console.error(err2);
-              res.status(500).json({ error: "Insert company failed" });
-              conn.end();
-              return;
+              console.error("Company insert failed:", err2.message);
+              return res.status(500).json({ error: "Insert company failed" });
             }
-
             insertApplication(result.insertId);
           }
         );
@@ -130,21 +138,18 @@ app.post("/application", function (req, res) {
         insertApplication(rows[0].company_id);
       }
 
-      // 3. Insert application
       function insertApplication(company_id) {
-        conn.query(
+        pool.query(
           `INSERT INTO application
            (company_id, position, status, applied_date)
            VALUES (?, ?, ?, ?)`,
           [company_id, position, status, applied_date],
-          function (err3) {
+          (err3) => {
             if (err3) {
-              console.error(err3);
-              res.status(500).json({ error: "Insert application failed" });
-            } else {
-              res.json({ success: true });
+              console.error("Application insert failed:", err3.message);
+              return res.status(500).json({ error: "Insert application failed" });
             }
-            conn.end();
+            res.json({ success: true });
           }
         );
       }
@@ -154,11 +159,9 @@ app.post("/application", function (req, res) {
 
 /* ---------------------------
    START SERVER
+   - Uses PORT from environment (required by hosting platforms like Railway)
 ---------------------------- */
-const PORT = 5070;
+const PORT = process.env.PORT || 5070;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-setInterval(() => {}, 1000); // keep event loop alive
-
