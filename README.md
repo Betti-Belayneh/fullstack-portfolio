@@ -11,6 +11,10 @@ A full-stack web application for tracking school assignments and job application
 - **Dashboard** — see both trackers at a glance, color-coded by status
 - **Normalized data** — automatically reuses an existing company or creates a new one, and enforces referential integrity between assignments and courses
 
+## Screenshot
+
+   ![Dashboard showing the school and job trackers](dashboard.png)
+
 ## Tech stack
 
 | Layer | Technology |
